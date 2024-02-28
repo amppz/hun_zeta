@@ -90,3 +90,13 @@ void zeta::transceiver::send_from(void *begin, size_t bytes) {
     std::memcpy(data + 5, begin, bytes);
     uart_write_blocking(m_uart, data, bytes + 5);
 }
+
+void zeta::transceiver::request_firmware() {
+    uint8_t data[] =  {'A', 'T', 'V'};
+    uart_write_blocking(m_uart, data, 3);
+}
+
+void zeta::transceiver::request_rssi() {
+    uint8_t data[] = {'A', 'T', 'Q'};
+    uart_write_blocking(m_uart, data, 3);
+}

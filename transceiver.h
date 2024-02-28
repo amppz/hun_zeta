@@ -72,6 +72,8 @@ namespace zeta {
             uart_read_blocking(m_uart, (uint8_t*)&t, sizeof(T));
             return t;
         }
+        void request_firmware();
+        void request_rssi();
 
 
     private:
