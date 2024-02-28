@@ -3,6 +3,7 @@
 #include <span>
 #include <cstring>
 #include "enums.h"
+#include <ranges>
 
 namespace zeta {
     class transceiver {
@@ -10,23 +11,25 @@ namespace zeta {
         explicit transceiver(uart_inst* uart_inst);
         ~transceiver();
 
-        void start(uart_baud_opt baud_rate_opt, uint pin_shutdown);
+        void start(uart_baud_opt baud_rate_opt, uint pin_shutdown, uint pin_rx, uint pin_tx);
 
-        template<typename Type>
-        void send_from(std::span<Type> data_span) {
-            auto const size = data_span.size_bytes();
+        void send_from(void* begin, size_t bytes);
+
+        void send_from(std::ranges::contiguous_range auto r) {
+            auto const size = std::end(r) - std::begin(r);
             uint8_t data[size + 5];
             data[0] = 'A';
             data[1] = 'T';
             data[2] = 'S';
             data[3] = m_channel;
             data[4] = size;
+            std::memcpy(data + 5, std::ranges::cdata(r), size);
             uart_write_blocking(m_uart, data, size + 5);
         }
 
-        template<typename T> requires std::is_pod_v<std::remove_cvref_t<T>>
-        void send(T&& plain_data) {
-            auto constexpr size = sizeof(std::remove_cvref_t<T>);
+        template<typename T> requires std::is_standard_layout_v<T> && std::is_trivial_v<T>
+        void send(T const& plain_data) {
+            auto constexpr size = sizeof(T);
             uint8_t data[size + 5];
             data[0] = 'A';
             data[1] = 'T';
@@ -65,9 +68,9 @@ namespace zeta {
 
         template <typename T> requires std::is_pod_v<T>
         T read() {
-            uint8_t d[sizeof(T)];
-            uart_read_blocking(m_uart, d, sizeof(T));
-            return *reinterpret_cast<uint8_t*>(d);
+            T t;
+            uart_read_blocking(m_uart, (uint8_t*)&t, sizeof(T));
+            return t;
         }
 
 
@@ -79,6 +82,8 @@ namespace zeta {
         uart_inst* m_uart;
         uint8_t m_channel{};
         uint m_pin_shutdown{};
+        uint m_pin_rx{};
+        uint m_pin_tx{};
 
     };
 
