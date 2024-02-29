@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.28)
+cmake_minimum_required(VERSION 3.21)
 
 include(${CMAKE_SOURCE_DIR}/cmake/pico_sdk_import.cmake)
 project(hun_zeta C CXX ASM)
