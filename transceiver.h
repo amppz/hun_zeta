@@ -29,6 +29,7 @@ namespace zeta {
             union {
                 struct {
                     uint8_t length{};
+                    uint8_t rssi{};
                     union {
                         uint8_t data[64];
                         T value{};
