@@ -43,16 +43,16 @@ namespace zeta {
 
     class transceiver {
     public:
-        explicit transceiver(uart_inst *uart_inst);
+        explicit transceiver(uart_inst *uart_inst) noexcept;
 
-        ~transceiver();
+        ~transceiver() noexcept;
 
-        void start(uart_baud_opt baud_rate_opt, uint pin_shutdown, uint pin_rx, uint pin_tx);
+        void start(uart_baud_opt baud_rate_opt, uint pin_shutdown, uint pin_rx, uint pin_tx) noexcept;
 
-        void send_from(void *begin, size_t bytes);
+        void send_from(void *begin, size_t bytes) noexcept;
 
         // Data in range must be less than 64 bytes
-        void send_from(std::ranges::contiguous_range auto r) {
+        void send_from(std::ranges::contiguous_range auto r) noexcept {
             auto const size = std::ranges::size(r);
             uint8_t data[size + 5];
             data[0] = 'A';
@@ -67,7 +67,7 @@ namespace zeta {
         // Has to be plain, and less than 64 bytes
         template<typename T>
         requires std::is_standard_layout_v<T> && std::is_trivial_v<T> && (sizeof(T) < 64)
-        void send(T const &plain_data) {
+        void send(T const &plain_data) noexcept {
             auto constexpr size = sizeof(T);
             uint8_t data[size + 5];
             data[0] = 'A';
@@ -79,41 +79,41 @@ namespace zeta {
             uart_write_blocking(m_uart, data, size + 5);
         }
 
-        void set_mode(zeta::mode_t mode);
+        void set_mode(zeta::mode_t mode) noexcept;
 
         /**
          * \brief
          * \param rate use the enum
          * \return true on success
          */
-        void set_uart_baud_rate(zeta::uart_baud_opt rate);
+        void set_uart_baud_rate(zeta::uart_baud_opt rate) noexcept;
 
         /**
          * \brief sets the rf baud rate and restarts the transceiver
          * \return
          */
-        void set_rf_baud_rate(zeta::rf_baud_opt rate);
+        void set_rf_baud_rate(zeta::rf_baud_opt rate) noexcept;
 
         /**
          * \brief set the output power
          * @param power_level
          */
-        void set_rf_output_power(uint8_t power_level);
+        void set_rf_output_power(uint8_t power_level) noexcept;
 
         /**
          * \param channel must be less than 16
          */
-        void set_transmission_channel(uint8_t channel);
+        void set_transmission_channel(uint8_t channel) noexcept;
 
         /**
          * @param dst location to read to
          * @param bytes number of bytes to read
          */
-        void raw_read_to(void *dst, int bytes);
+        void raw_read_to(void *dst, int bytes) noexcept;
 
         template<typename T>
         requires std::is_trivial_v<T> && std::is_standard_layout_v<T>
-        response_t<T> read() {
+        response_t<T> read() noexcept {
             // Wait for # which signifies the beginning of a packet
             while (uart_getc(m_uart) != '#') {}
             response_t<T> res{};
@@ -141,13 +141,13 @@ namespace zeta {
             return res;
         }
 
-        void request_firmware();
+        void request_firmware() noexcept;
 
-        void request_rssi();
+        void request_rssi() noexcept;
 
 
     private:
-        void restart();
+        void restart() noexcept;
 
 
     private:
