@@ -64,8 +64,8 @@ int main() {
         case zeta::packet_type_t::TRANSMIT:
         case zeta::packet_type_t::RSSI: {
             printf("RSSI: %u", resp.rssi);
-        }
             break;
+        }
         case zeta::packet_type_t::READ: {
             auto my_struct = resp.read.value;
             printf("Read: %ld", my_struct.a);
