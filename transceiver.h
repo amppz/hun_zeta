@@ -51,32 +51,48 @@ namespace zeta {
         ~transceiver() noexcept;
 
         /**
- * Configure RX mode
- * @param byte_count - max number of bytes reads should receive, max is 64
- * @param receive_channel - channel that reads will arrive on
- */
+         * Configure RX mode
+         * @param byte_count - max number of bytes reads should receive, max is 64
+         * @param receive_channel - channel that read from
+         * All messages received will be truncated to, or padded to `byte_count` bytes.
+         * @tag completes on ZETAPLUS
+         */
         void configure_rx(uint8_t byte_count, uint8_t receive_channel);
 
-        void send_from(void *begin, size_t bytes) noexcept;
+        /**
+         * @brief sends data to ZETAPLUS
+         * @param src - source of data
+         * @param byte_count - number of bytes to send from it
+         * @tag Completes on ZETAPLUS
+         */
+        void send_from(void *src, size_t byte_count) noexcept;
 
-        // Data in range must be less than 64 bytes
-        void send_from(std::ranges::contiguous_range auto r) noexcept {
-            auto const size = std::ranges::size(r);
+        /**
+         * @brief sends data to ZETAPLUS
+         * @param range - a contiguous range, for example std::vector
+         * @tag Completes on ZETAPLUS
+         */
+        void send_from(std::ranges::contiguous_range auto range) noexcept {
+            auto const size = std::ranges::size(range);
             uint8_t data[size + 5];
             data[0] = 'A';
             data[1] = 'T';
             data[2] = 'S';
             data[3] = m_channel;
             data[4] = size;
-            std::memcpy(data + 5, std::ranges::cdata(r), size);
+            std::memcpy(data + 5, std::ranges::cdata(range), size);
             uart_write_blocking(m_uart, data, size + 5);
         }
 
-        // Has to be plain, and less than 64 bytes
-        template<typename T>
-        requires std::is_standard_layout_v<T> && std::is_trivial_v<T> && (sizeof(T) < 64)
-        void send(T const &plain_data) noexcept {
-            auto constexpr size = sizeof(T);
+        /**
+         *
+         * @tparam PlainDataType - a numerical type or plain struct
+         * @tag Completes on ZETAPLUS
+         */
+        template<typename PlainDataType>
+        requires std::is_standard_layout_v<PlainDataType> && std::is_trivial_v<PlainDataType> && (sizeof(PlainDataType) < 64)
+        void send(PlainDataType const &plain_data) noexcept {
+            auto constexpr size = sizeof(PlainDataType);
             uint8_t data[size + 5];
             data[0] = 'A';
             data[1] = 'T';
@@ -87,39 +103,48 @@ namespace zeta {
             uart_write_blocking(m_uart, data, size + 5);
         }
 
+        /**
+         * @brief sets the operating mode of the ZETAPLUS
+         * @param mode
+         * @tag Completes on ZETAPLUS
+         */
         void set_mode(zeta::mode_t mode) noexcept;
 
         /**
-         * \brief
-         * \param rate use the enum
-         * \return true on success
+         * @brief set the UART baud rate
          */
-        void set_uart_baud_rate(zeta::uart_baud_opt rate) noexcept;
+        void set_uart_baud_rate(zeta::uart_baud_opt rate_option) noexcept;
 
         /**
-         * \brief sets the rf baud rate and restarts the transceiver
-         * \return
+         * @brief sets the rf baud rate and restarts the transceiver
          */
-        void set_rf_baud_rate(zeta::rf_baud_opt rate) noexcept;
+        void set_rf_baud_rate(zeta::rf_baud_opt rate_option) noexcept;
 
         /**
-         * \brief set the output power
-         * @param power_level
+         * @brief set the output power
+         * @param power_level - range 1 to 127
          * Will cause a restart, requiring rx config and mode to be set once again
+         * @tag Completes on ZETAPLUS
          */
         void set_rf_output_power(uint8_t power_level) noexcept;
 
         /**
-         * \param channel must be less than 16
+         * @param channel - TX transmission channel, must be less than 16
          */
         void set_output_channel(uint8_t channel) noexcept;
 
         /**
-         * @param dst location to read to
-         * @param bytes number of bytes to read
+         * @brief reads directly from uart without waiting for ZETAPLUS packet header
+         * @param dst - location to read to
+         * @param bytes - number of bytes to read
          */
         void raw_read_to(void *dst, int bytes) noexcept;
 
+        /**
+         * @brief reads data received by the UART
+         * @return the response from the ZETAPLUS
+         *
+         */
         response_t read() noexcept {
             // Wait for # which signifies the beginning of a packet
             while (uart_getc(m_uart) != '#') {}
@@ -150,23 +175,31 @@ namespace zeta {
             return res;
         }
 
+        /**
+         * @brief request the ZETAPLUS firmware string
+         * You will be able to receive the result from read()
+         */
         void request_firmware() noexcept;
 
+        /**
+         * @brief request the Received Signal Strength Value
+         * You will be able to receive the result from read()
+         */
         void request_rssi() noexcept;
 
+        /**
+         * @brief request the ZETAPLUS config
+         * You will be able to receive the result from read()
+         */
         void request_device_config() noexcept;
-
     private:
         void restart() noexcept;
-
-
     private:
         uart_inst *m_uart;
         uint8_t m_channel{};
         uint m_pin_shutdown{};
         uint m_pin_rx{};
         uint m_pin_tx{};
-        constexpr static auto max_size = 64 + 5;
     };
 
 

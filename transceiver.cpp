@@ -31,14 +31,14 @@ void zeta::transceiver::set_mode(zeta::mode_t mode) noexcept {
     uart_write_blocking(m_uart, data, 4);
 }
 
-void zeta::transceiver::set_uart_baud_rate(zeta::uart_baud_opt rate) noexcept {
-    uint8_t data[4] = {'A', 'T', 'H', static_cast<uint8_t>(rate)};
+void zeta::transceiver::set_uart_baud_rate(zeta::uart_baud_opt rate_option) noexcept {
+    uint8_t data[4] = {'A', 'T', 'H', static_cast<uint8_t>(rate_option)};
     uart_write_blocking(m_uart, data, 4);
-    uart_set_baudrate(m_uart, uart_baud_opt_to_value(rate));
+    uart_set_baudrate(m_uart, uart_baud_opt_to_value(rate_option));
 }
 
-void zeta::transceiver::set_rf_baud_rate(zeta::rf_baud_opt rate) noexcept {
-    uint8_t data[4] = {'A', 'T', 'B', static_cast<uint8_t>(rate)};
+void zeta::transceiver::set_rf_baud_rate(zeta::rf_baud_opt rate_option) noexcept {
+    uint8_t data[4] = {'A', 'T', 'B', static_cast<uint8_t>(rate_option)};
     uart_write_blocking(m_uart, data, 4);
     restart();
 }
@@ -62,15 +62,15 @@ void zeta::transceiver::restart() noexcept {
     sleep_ms(50);
 }
 
-void zeta::transceiver::send_from(void *begin, size_t bytes) noexcept {
-    uint8_t data[bytes + 5];
+void zeta::transceiver::send_from(void *src, size_t byte_count) noexcept {
+    uint8_t data[byte_count + 5];
     data[0] = 'A';
     data[1] = 'T';
     data[2] = 'S';
     data[3] = m_channel;
-    data[4] = bytes;
-    std::memcpy(data + 5, begin, bytes);
-    uart_write_blocking(m_uart, data, bytes + 5);
+    data[4] = byte_count;
+    std::memcpy(data + 5, src, byte_count);
+    uart_write_blocking(m_uart, data, byte_count + 5);
 }
 
 void zeta::transceiver::request_firmware() noexcept {
