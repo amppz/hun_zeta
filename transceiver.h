@@ -44,6 +44,12 @@ namespace zeta {
         uint8_t receive_channel;
     };
 
+    /**
+     * Class for using a ZETAPLUS transceiver
+     * ALL functions EXCEPT `set_transmission_channel` block on UART
+     * more information here: https://www.rfsolutions.co.uk/downloads/652412b497cb1739DS-ZETAPLUS-8.pdf
+     * archived version: https://web.archive.org/web/20240302200730/https://www.rfsolutions.co.uk/downloads/652412b497cb1739DS-ZETAPLUS-8.pdf
+     */
     class transceiver {
     public:
         explicit transceiver(uart_inst *uart_inst, config_t const& config) noexcept;
