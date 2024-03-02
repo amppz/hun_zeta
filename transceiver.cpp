@@ -93,3 +93,8 @@ void zeta::transceiver::configure_rx(uint8_t byte_count, uint8_t receive_channel
     uint8_t data[5] = {'A', 'T', 'R', receive_channel, byte_count};
     uart_write_blocking(m_uart, data, 5);
 }
+
+void zeta::transceiver::request_device_config() noexcept {
+    uint8_t data[3] = {'A', 'T', '?'};
+    uart_write_blocking(m_uart, data, 3);
+}
