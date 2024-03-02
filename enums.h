@@ -31,7 +31,7 @@ namespace zeta {
         RSSI = 'Q',
         READ = 'R',
         CONFIG = '?',
-        FIRMWARE = 'V',
+        FIRMWARE = 'Z',
         TRANSMIT = 'T',
         UNKNOWN = 255
     };
