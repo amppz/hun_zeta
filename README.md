@@ -7,7 +7,7 @@ Library for using the zetaplus transceiver on the raspberry pi pico
 ```cmake
 cmake_minimum_required(VERSION 3.28)
 
-include(${CMAKE_SOURCE_DIR}/cmake/pico_sdk_import.cmake)
+include(/path/to/pico_sdk_import.cmake)
 project(example C CXX ASM)
 
 pico_sdk_init()
@@ -17,80 +17,100 @@ set(CMAKE_CXX_STANDARD 23)
 add_subdirectory(hun_zeta)
 
 add_executable(example)
-
 target_link_libraries(example pico_stdlib hun_zeta)
+
+pico_enable_stdio_usb(example 1)
+pico_enable_stdio_uart(example 0)
+
+pico_add_extra_outputs(example)
 ```
 
-### Example
+### Example code
 ```cpp
-#include <iostream>
 #include <pico/stdlib.h>
-#include <vector>
+#include <cstdio>
 #include "hun_zeta/transceiver.h"
 
-struct my_plain_struct {
-    int32_t a;
-    uint8_t b;
-    uint8_t c;
-    char d;
-    int8_t e;
-};
+#define PIN_SDN 2
+#define PIN_RX 1
+#define PIN_TX 0
 
-int main() {
-    zeta::transceiver transceiver(uart0);
-    transceiver.start(zeta::uart_baud_opt::UART_9600, 8, 1, 2);
-    transceiver.set_mode(zeta::mode_t::READY);
-    transceiver.set_transmission_channel(13);
+void print_arr(uint8_t const *data, uint count, const char *format, const char *prefix, const char *suffix);
 
-    // Send from a byte buffer
-    uint8_t my_buffer[20];
-    transceiver.send_from(my_buffer, 20);
-
-    // Send a specific value
-    transceiver.send<int>(2);
-
-    // Send from a standard-library container
-    std::vector<uint16_t> example = {3, 6, 1, 5};
-    transceiver.send_from(example);
-
-    // Send from a custom structure
-    my_plain_struct inst{112304, 2, 4, 'A', 42};
-    transceiver.send<my_plain_struct>(inst);
-
-    // Read out a response
-    auto resp = transceiver.read<my_plain_struct>();
-
+void output_response(zeta::response_t const &resp) {
     switch (resp.packet_type) {
-        case zeta::packet_type_t::TRANSMIT:
         case zeta::packet_type_t::RSSI: {
-            printf("RSSI: %u", resp.rssi);
-            break;
+            std::printf("RSSI: %u\n", resp.rssi);
+            return;
         }
-        case zeta::packet_type_t::READ: {
-            auto my_struct = resp.read.value;
-            printf("Read: %ld", my_struct.a);
-            break;
+        case zeta::packet_type_t::FIRMWARE : {
+            std::printf("Firmware: %s\n", resp.firmware_str);
+            return;
         }
         case zeta::packet_type_t::CONFIG: {
             auto &cfg = resp.config;
-            printf("Config: (CH: %u, PW: %u, RFB%lu, %u)",
-                   cfg.channel_no,
-                   cfg.rf_power,
-                   zeta::rf_baud_opt_to_value(cfg.rf_baud_opt),
-                   (uint8_t) cfg.mode);
-            break;
+            std::printf("Channel: %x, Mode: %x, RF Baud: %lu, RF Power: %u, Sync Bytes: ",
+                   cfg.channel_no, (uint8_t) cfg.mode, zeta::rf_baud_opt_to_value(cfg.rf_baud_opt), cfg.rf_power);
+            print_arr(cfg.sync_bytes, 4, "%x", "[", "]\n");
+            return;
         }
-        case zeta::packet_type_t::FIRMWARE: {
-            printf("Firmware: %s", resp.firmware_str);
-            break;
+        case zeta::packet_type_t::DATA: {
+            auto &read = resp.read;
+            std::printf("RSSI: %d, Length: %d, Data: ", read.rssi, read.length);
+            print_arr(resp.read.data, read.length, "%x", "[", "]\n");
+            return;
         }
-        default: {
-            perror("Unknown packet type received");
-            break;
-        }
+        default:
+            printf("Received unhandled type: %x\n", (uint8_t) resp.packet_type);
+            return;
     }
+}
 
-    return 0;
+int main() {
+    constexpr zeta::config_t cfg{
+            .m_baud_rate = zeta::uart_baud_opt::UART_19200,
+            .pin_rx = PIN_RX,
+            .pin_tx = PIN_TX,
+            .pin_shutdown = PIN_SDN,
+            .receive_bytes = 2,
+            .receive_channel = 0};
+
+    stdio_init_all();
+    sleep_ms(5000);
+
+    std::puts("Started.");
+
+    zeta::transceiver xceiver(uart0, cfg);
+
+    std::puts("Requesting rssi...");
+    xceiver.request_rssi();
+    output_response(xceiver.read());
+
+    std::puts("Requesting device fw...");
+    xceiver.request_firmware();
+    output_response(xceiver.read());
+
+    std::puts("Requesting device config...");
+    xceiver.request_device_config();
+    output_response(xceiver.read());
+    
+    xceiver.set_output_channel(1);
+    xceiver.send<uint64_t>(time_us_64());
+}
+
+void print_arr(uint8_t const *data, uint count, const char *format, const char *prefix, const char *suffix) {
+    if (count == 0) {
+        printf("%s", prefix);
+        printf("%s", suffix);
+        return;
+    }
+    printf("%s", prefix);
+    for (auto i = 0; i < (count - 1); ++i) {
+        printf(format, data[i]);
+        printf(", ");
+    }
+    printf(format, data[count - 1]);
+    printf("%s", suffix);
 }
 
 ```
