@@ -16,7 +16,7 @@ zeta::transceiver::transceiver(uart_inst *uart_inst, config_t const& cfg) noexce
 
     restart();
     configure_rx(cfg.receive_bytes, cfg.receive_channel);
-    set_mode(zeta::mode_t::READY);
+    set_mode(zeta::mode_t::RX);
 }
 
 zeta::transceiver::~transceiver() noexcept {
