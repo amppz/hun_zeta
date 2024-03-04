@@ -1,9 +1,9 @@
 #include "transceiver.h"
 
 
-zeta::transceiver::transceiver(uart_inst *uart_inst, config_t const& cfg) noexcept
-        : m_uart(uart_inst) {
-    uart_init(m_uart, uart_baud_opt_to_value(cfg.m_baud_rate));
+zeta::transceiver::transceiver(uart_inst *uart_inst, config_t const &cfg) noexcept
+        : m_uart(uart_inst), m_owns_uart(true), m_pin_shutdown(cfg.pin_shutdown) {
+    uart_init(m_uart, 19200);
     m_pin_shutdown = cfg.pin_shutdown;
     m_pin_rx = cfg.pin_rx;
     m_pin_tx = cfg.pin_tx;
@@ -17,11 +17,28 @@ zeta::transceiver::transceiver(uart_inst *uart_inst, config_t const& cfg) noexce
     restart();
     configure_rx(cfg.receive_bytes, cfg.receive_channel);
     set_mode(zeta::mode_t::RX);
+    set_uart_baud_rate(cfg.m_baud_rate);
+}
+
+zeta::transceiver::transceiver(uart_inst *uart, uart_baud_opt baud, uint pin_shutdown, uint8_t receive_bytes, uint8_t channel) noexcept
+        : m_uart(uart), m_owns_uart(false), m_pin_shutdown(pin_shutdown) {
+    uart_tx_wait_blocking(uart);
+    uart_set_baudrate(uart, 19200);
+    gpio_init(pin_shutdown);
+    gpio_set_dir(pin_shutdown, GPIO_OUT);
+
+    restart();
+
+    configure_rx(receive_bytes, channel);
+    set_mode(zeta::mode_t::RX);
+    set_uart_baud_rate(baud);
 }
 
 zeta::transceiver::~transceiver() noexcept {
-    uart_deinit(m_uart);
     gpio_deinit(m_pin_shutdown);
+    if (!m_owns_uart)
+        return;
+    uart_deinit(m_uart);
     gpio_deinit(m_pin_rx);
     gpio_deinit(m_pin_tx);
 }
@@ -33,8 +50,12 @@ void zeta::transceiver::set_mode(zeta::mode_t mode) noexcept {
 
 void zeta::transceiver::set_uart_baud_rate(zeta::uart_baud_opt rate_option) noexcept {
     uint8_t data[4] = {'A', 'T', 'H', static_cast<uint8_t>(rate_option)};
+
     uart_write_blocking(m_uart, data, 4);
+
+    uart_tx_wait_blocking(m_uart);
     uart_set_baudrate(m_uart, uart_baud_opt_to_value(rate_option));
+    sleep_ms(50);
 }
 
 void zeta::transceiver::set_rf_baud_rate(zeta::rf_baud_opt rate_option) noexcept {
@@ -55,7 +76,7 @@ void zeta::transceiver::set_output_channel(uint8_t channel) noexcept {
 }
 
 void zeta::transceiver::restart() noexcept {
-    sleep_ms(20);
+    uart_tx_wait_blocking(m_uart);
     gpio_put(m_pin_shutdown, true);
     sleep_ms(50);
     gpio_put(m_pin_shutdown, false);
@@ -98,3 +119,5 @@ void zeta::transceiver::request_device_config() noexcept {
     uint8_t data[3] = {'A', 'T', '?'};
     uart_write_blocking(m_uart, data, 3);
 }
+
+

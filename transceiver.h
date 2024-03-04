@@ -52,7 +52,21 @@ namespace zeta {
      */
     class transceiver {
     public:
+        /**
+         * \brief constructor for if the UART is to be wholly controlled by this class
+         * @param uart_inst - uninitialised uart instance
+         * @param config
+         */
         explicit transceiver(uart_inst *uart_inst, config_t const& config) noexcept;
+        /**
+         * \brief constructor for if UART and pins are initialised outside of this class
+         * @param uart - initialised uart instance
+         * @param baud_rate_option - baud rate option
+         * @param pin_shutdown - ZETAPLUS shutdown pin
+         * @param receive_bytes - ZETAPLUS bytes to receive
+         * @param channel - ZETAPLUS rf receive channel
+         */
+        explicit transceiver(uart_inst* uart, uart_baud_opt baud_rate_option, uint pin_shutdown, uint8_t receive_bytes, uint8_t channel) noexcept;
 
         ~transceiver() noexcept;
 
@@ -206,6 +220,7 @@ namespace zeta {
         uint m_pin_shutdown{};
         uint m_pin_rx{};
         uint m_pin_tx{};
+        bool m_owns_uart;
     };
 
 
