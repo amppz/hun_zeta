@@ -18,7 +18,6 @@ namespace zeta {
         uint8_t channel_no;
     };
 
-    template<typename T> requires std::is_trivial_v<T> && std::is_standard_layout_v<T>
     struct response_t {
         packet_type_t packet_type{packet_type_t::UNKNOWN};
         union {
@@ -29,10 +28,7 @@ namespace zeta {
                 struct {
                     uint8_t length{};
                     uint8_t rssi{};
-                    union {
-                        uint8_t data[64];
-                        T value{};
-                    };
+                    uint8_t data[64];
                 };
             } read{};
 
@@ -124,12 +120,10 @@ namespace zeta {
          */
         void raw_read_to(void *dst, int bytes) noexcept;
 
-        template<typename T>
-        requires std::is_trivial_v<T> && std::is_standard_layout_v<T>
-        response_t<T> read() noexcept {
+        response_t read() noexcept {
             // Wait for # which signifies the beginning of a packet
             while (uart_getc(m_uart) != '#') {}
-            response_t<T> res{};
+            response_t res{};
 
             res.packet_type = (packet_type_t) uart_getc(m_uart);
             switch (res.packet_type) {
