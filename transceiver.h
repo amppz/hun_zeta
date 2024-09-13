@@ -10,8 +10,7 @@
 namespace zeta {
 
 #pragma pack(1)
-
-    struct config_t {
+    struct device_config_t {
         zeta::mode_t mode;
         zeta::rf_baud_opt rf_baud_opt;
         uint8_t rf_power;
@@ -24,8 +23,8 @@ namespace zeta {
         packet_type_t packet_type{packet_type_t::UNKNOWN};
         union {
             uint8_t rssi;
-            config_t config;
-            char firmware_str[5];
+            device_config_t config;
+            int8_t firmware_str[12];
             union {
                 struct {
                     uint8_t length{};
@@ -40,14 +39,27 @@ namespace zeta {
         };
     };
 #pragma pack()
+    struct config_t {
+        uart_baud_opt m_baud_rate;
+        uint pin_rx;
+        uint pin_tx;
+        uint pin_shutdown;
+        uint8_t receive_bytes;
+        uint8_t receive_channel;
+    };
 
     class transceiver {
     public:
-        explicit transceiver(uart_inst *uart_inst) noexcept;
+        explicit transceiver(uart_inst *uart_inst, config_t const& config) noexcept;
 
         ~transceiver() noexcept;
 
-        void start(uart_baud_opt baud_rate_opt, uint pin_shutdown, uint pin_rx, uint pin_tx) noexcept;
+        /**
+ * Configure RX mode
+ * @param byte_count - max number of bytes reads should receive, max is 64
+ * @param receive_channel - channel that reads will arrive on
+ */
+        void configure_rx(uint8_t byte_count, uint8_t receive_channel);
 
         void send_from(void *begin, size_t bytes) noexcept;
 
@@ -97,13 +109,14 @@ namespace zeta {
         /**
          * \brief set the output power
          * @param power_level
+         * Will cause a restart, requiring rx config and mode to be set once again
          */
         void set_rf_output_power(uint8_t power_level) noexcept;
 
         /**
          * \param channel must be less than 16
          */
-        void set_transmission_channel(uint8_t channel) noexcept;
+        void set_output_channel(uint8_t channel) noexcept;
 
         /**
          * @param dst location to read to
@@ -129,11 +142,12 @@ namespace zeta {
                     uart_read_blocking(m_uart, (uint8_t *) res.read.data, res.read.length);
                     break;
                 case packet_type_t::CONFIG:
-                    uart_read_blocking(m_uart, (uint8_t *) &res.config, sizeof(config_t));
+                    uart_read_blocking(m_uart, (uint8_t *) &res.config, sizeof(device_config_t));
                     break;
                 case packet_type_t::FIRMWARE:
-                    uart_read_blocking(m_uart, (uint8_t *) &res.firmware_str, 4);
-                    res.firmware_str[4] = '\0';
+                    res.firmware_str[0] = (int8_t)res.packet_type;
+                    uart_read_blocking(m_uart, ((uint8_t*)res.firmware_str) + 1, 10);
+                    res.firmware_str[11] = '\0';
                     break;
                 default:
                     res.packet_type = packet_type_t::UNKNOWN;
@@ -156,6 +170,7 @@ namespace zeta {
         uint m_pin_shutdown{};
         uint m_pin_rx{};
         uint m_pin_tx{};
+        constexpr static auto max_size = 64 + 5;
     };
 
 
