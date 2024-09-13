@@ -36,7 +36,7 @@ namespace zeta {
         UNKNOWN = 255
     };
 
-    static constexpr uint16_t uart_baud_opt_to_value(zeta::uart_baud_opt baud) {
+    static constexpr uint16_t uart_baud_opt_to_value(zeta::uart_baud_opt baud) noexcept {
         switch (baud) {
             case zeta::uart_baud_opt::UART_9600:
                 return 9600;
@@ -53,7 +53,7 @@ namespace zeta {
         }
     }
 
-    static constexpr uint32_t rf_baud_opt_to_value(zeta::rf_baud_opt baud) {
+    static constexpr uint32_t rf_baud_opt_to_value(zeta::rf_baud_opt baud) noexcept {
         switch (baud) {
             case rf_baud_opt::RF_4800:
                 return 4800;
