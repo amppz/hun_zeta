@@ -83,7 +83,7 @@ void zeta::transceiver::restart() noexcept {
     sleep_ms(50);
 }
 
-void zeta::transceiver::send_from(void *src, size_t byte_count) noexcept {
+void zeta::transceiver::send_from(const void *src, size_t byte_count) noexcept {
     uint8_t data[byte_count + 5];
     data[0] = 'A';
     data[1] = 'T';
@@ -105,12 +105,13 @@ void zeta::transceiver::request_rssi() noexcept {
 }
 
 
-void zeta::transceiver::raw_read_to(void *dst, int bytes) noexcept {
+void zeta::transceiver::raw_read_to(void *dst, size_t bytes) noexcept {
     uart_read_blocking(m_uart, (uint8_t *) dst, bytes);
 }
 
-void zeta::transceiver::configure_rx(uint8_t byte_count, uint8_t receive_channel) {
-    assert(byte_count < 64);
+void zeta::transceiver::configure_rx(uint8_t byte_count, uint8_t receive_channel) noexcept {
+    if (byte_count > 4)
+        byte_count = 64;
     uint8_t data[5] = {'A', 'T', 'R', receive_channel, byte_count};
     uart_write_blocking(m_uart, data, 5);
 }

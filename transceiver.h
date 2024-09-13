@@ -24,13 +24,11 @@ namespace zeta {
             uint8_t rssi;
             device_config_t config;
             int8_t firmware_str[12];
-            union {
-                struct {
-                    uint8_t length{};
-                    uint8_t rssi{};
-                    uint8_t data[64];
-                };
-            } read{};
+            struct {
+                uint8_t length{};
+                uint8_t rssi{};
+                uint8_t data[64];
+            } read;
 
         };
     };
@@ -77,7 +75,7 @@ namespace zeta {
          * All messages received will be truncated to, or padded to `byte_count` bytes.
          * @tag completes on ZETAPLUS
          */
-        void configure_rx(uint8_t byte_count, uint8_t receive_channel);
+        void configure_rx(uint8_t byte_count, uint8_t receive_channel) noexcept;
 
         /**
          * @brief sends data to ZETAPLUS
@@ -85,14 +83,14 @@ namespace zeta {
          * @param byte_count - number of bytes to send from it
          * @tag Completes on ZETAPLUS
          */
-        void send_from(void *src, size_t byte_count) noexcept;
+        void send_from(const void *src, size_t byte_count) noexcept;
 
         /**
          * @brief sends data to ZETAPLUS
          * @param range - a contiguous range, for example std::vector
          * @tag Completes on ZETAPLUS
          */
-        void send_from(std::ranges::contiguous_range auto range) noexcept {
+        void send_from(std::ranges::contiguous_range auto const& range) noexcept {
             auto const size = std::ranges::size(range);
             uint8_t data[size + 5];
             data[0] = 'A';
@@ -158,7 +156,7 @@ namespace zeta {
          * @param dst - location to read to
          * @param bytes - number of bytes to read
          */
-        void raw_read_to(void *dst, int bytes) noexcept;
+        void raw_read_to(void *dst, size_t bytes) noexcept;
 
         /**
          * @brief reads data received by the UART
