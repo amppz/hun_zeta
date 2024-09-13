@@ -4,9 +4,11 @@
 
 namespace zeta {
     enum class mode_t : uint8_t {
+        // Allows transmission and reception
         RX = 1,
-        // Default
+        // Low power mode that allows fast mode switching (1ms), can transmit, cannot receive
         READY = 2,
+        // Low power sleep mode, can transmit, may be delayed
         SLEEP = 3
     };
     enum class rf_baud_opt : uint8_t {
