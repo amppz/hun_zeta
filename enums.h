@@ -31,7 +31,7 @@ namespace zeta {
 
     enum class packet_type_t : uint8_t {
         RSSI = 'Q',
-        READ = 'R',
+        DATA = 'R',
         CONFIG = '?',
         FIRMWARE = 'Z',
         TRANSMIT = 'T',

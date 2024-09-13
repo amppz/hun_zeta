@@ -156,7 +156,7 @@ namespace zeta {
                 case packet_type_t::RSSI:
                     uart_read_blocking(m_uart, (uint8_t *) &res.rssi, 1);
                     break;
-                case packet_type_t::READ:
+                case packet_type_t::DATA:
                     res.read.length = uart_getc(m_uart);
                     res.read.rssi = uart_getc(m_uart);
                     uart_read_blocking(m_uart, (uint8_t *) res.read.data, res.read.length);
