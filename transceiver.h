@@ -159,6 +159,7 @@ namespace zeta {
 
         void request_rssi() noexcept;
 
+        void request_device_config() noexcept;
 
     private:
         void restart() noexcept;
