@@ -1,25 +1,8 @@
 #include "transceiver.h"
 
-static constexpr uint16_t to_value(zeta::uart_baud_opt baud) {
-    switch (baud) {
-        case zeta::uart_baud_opt::UART_9600:
-            return 9600;
-        case zeta::uart_baud_opt::UART_19200:
-            return 19200;
-        case zeta::uart_baud_opt::UART_28800:
-            return 28880;
-        case zeta::uart_baud_opt::UART_38400:
-            return 38400;
-        case zeta::uart_baud_opt::UART_57600:
-            return 57600;
-        default:
-            return 0;
-    }
-}
 
-
-zeta::transceiver::transceiver(uart_inst* uart_inst)
-: m_uart(uart_inst) {
+zeta::transceiver::transceiver(uart_inst *uart_inst)
+        : m_uart(uart_inst) {
 }
 
 zeta::transceiver::~transceiver() {
@@ -30,7 +13,7 @@ zeta::transceiver::~transceiver() {
 }
 
 void zeta::transceiver::start(uart_baud_opt baud_rate_opt, uint pin_shutdown, uint pin_rx, uint pin_tx) {
-    uart_init(m_uart, to_value(baud_rate_opt));
+    uart_init(m_uart, uart_baud_opt_to_value(baud_rate_opt));
     gpio_init(pin_shutdown);
     gpio_init(pin_rx);
     gpio_init(pin_tx);
@@ -51,7 +34,7 @@ void zeta::transceiver::set_mode(zeta::mode_t mode) {
 void zeta::transceiver::set_uart_baud_rate(zeta::uart_baud_opt rate) {
     uint8_t data[4] = {'A', 'T', 'H', static_cast<uint8_t>(rate)};
     uart_write_blocking(m_uart, data, 4);
-    uart_set_baudrate(m_uart, to_value(rate));
+    uart_set_baudrate(m_uart, uart_baud_opt_to_value(rate));
 }
 
 void zeta::transceiver::set_rf_baud_rate(zeta::rf_baud_opt rate) {
@@ -68,10 +51,6 @@ void zeta::transceiver::set_transmission_channel(uint8_t channel) {
     if (channel >= 16)
         return;
     m_channel = channel;
-}
-
-void zeta::transceiver::read_to(uint8_t* data, size_t size) {
-    uart_read_blocking(m_uart, data, size);
 }
 
 void zeta::transceiver::restart() {
@@ -92,11 +71,16 @@ void zeta::transceiver::send_from(void *begin, size_t bytes) {
 }
 
 void zeta::transceiver::request_firmware() {
-    uint8_t data[] =  {'A', 'T', 'V'};
+    uint8_t data[] = {'A', 'T', 'V'};
     uart_write_blocking(m_uart, data, 3);
 }
 
 void zeta::transceiver::request_rssi() {
     uint8_t data[] = {'A', 'T', 'Q'};
     uart_write_blocking(m_uart, data, 3);
+}
+
+
+void zeta::transceiver::raw_read_to(void *dst, int bytes) {
+    uart_read_blocking(m_uart, (uint8_t *) dst, bytes);
 }
